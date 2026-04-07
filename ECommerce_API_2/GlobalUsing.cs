@@ -1,0 +1,26 @@
+﻿global using System;
+global using System.Collections.Generic;
+global using System.Linq;
+global using Microsoft.AspNetCore.Mvc;
+global using Microsoft.EntityFrameworkCore;
+global using Scalar.AspNetCore;
+global using System.ComponentModel.DataAnnotations;
+global using System.IO;
+global using System.Linq.Expressions;
+global using System.Threading.Tasks;
+global using Microsoft.AspNetCore.Identity;
+global using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+global using Microsoft.AspNetCore.Authorization;
+global using Microsoft.AspNetCore.Authentication;
+global using System.Security.Claims;
+global using Microsoft.AspNetCore.Identity.UI.Services;
+global using ECommerce_API_2.Models;
+global using ECommerce_API_2.Utilities;
+global using ECommerce_API_2.Repository;
+global using ECommerce_API_2.DataAccess;
+global using ECommerce_API_2.DTOs;
+global using ECommerce_API_2.Services;
+global using ECommerce_API_2.Services.IServices;
+global using ECommerce_API_2.Utilities.DBInitilization;
+
+
