@@ -22,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Areas\Admin\" />
     <Folder Include="Areas\ChatApp\" />
     <Folder Include="Areas\Customer\" />
   </ItemGroup>

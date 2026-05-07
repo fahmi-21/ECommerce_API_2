@@ -12,6 +12,7 @@ global using Microsoft.AspNetCore.Identity;
 global using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 global using Microsoft.AspNetCore.Authorization;
 global using Microsoft.AspNetCore.Authentication;
+global using Microsoft.AspNetCore.Authentication.JwtBearer;
 global using System.Security.Claims;
 global using Microsoft.AspNetCore.Identity.UI.Services;
 global using ECommerce_API_2.Models;
@@ -22,5 +23,5 @@ global using ECommerce_API_2.DTOs;
 global using ECommerce_API_2.Services;
 global using ECommerce_API_2.Services.IServices;
 global using ECommerce_API_2.Utilities.DBInitilization;
-
-
+global using Microsoft.IdentityModel.Tokens;
+global using System.Text;

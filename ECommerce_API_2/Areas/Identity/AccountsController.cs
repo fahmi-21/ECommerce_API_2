@@ -5,10 +5,14 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using static System.Net.WebRequestMethods;
 
 namespace ECommerce_API_2.Areas.Identity
 {
-    [Route("[area]/[controller]")]
+     
     [Area (SD.IDENTITY_AREA)]
     [ApiController]
     public class AccountsController : ControllerBase
@@ -42,7 +46,7 @@ namespace ECommerce_API_2.Areas.Identity
                 Address = registerrequest.Address
             };
 
-            //aset user's data using master
+            //set user's data using master
             //var user = registerrequest.Adapt<ApplicationUser>();
 
             var result = await _userManager.CreateAsync(user, registerrequest.Password);
@@ -59,23 +63,23 @@ namespace ECommerce_API_2.Areas.Identity
 
             var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
 
-            var confirmationLink = Url.Action("Confirm", "Account", new
-            {
-                area = "Identity",
-                token,
-                user.Id
-            }, Request.Scheme);
+            var confirmationLink = Url
+                .Action("ConfirmEmail",
+                "Account",
+                new { area = "Identity", token, Id = user.Id },
+                Request.Scheme);
 
-            await _accountservices.SendEmailAsync(EmailType.Confirmation, $"<h1>Click <a href='{confirmationLink}'>here</a>" +
-                $"To Confirm Your Account </h1>", user);
+
+            await _accountservices.SendEmailAsync(EmailType.Confirmation,
+                $"<h1>Click <a href='{confirmationLink}'>here</a> to cofirm youyr account</h1>", user);
 
             await _userManager.AddToRoleAsync(user, SD.CUSTOMER_ROLE);
 
+            Console.WriteLine($"Confirmation link is: { confirmationLink}");
             return Ok(new SuccessRespones()
             {
                 Msg = "Account Has been Added Successfully"
             });
-            //return Created();
         }
         [HttpPost("Login")]
         public async Task<IActionResult> Login ( LoginRequest loginRequest)
@@ -87,14 +91,39 @@ namespace ECommerce_API_2.Areas.Identity
 
             if (user is  null)
             {
-               
 
                 keyValuePairs.AddModelError("EmailOrUserName" , "Invalid User Name or Email");
                 keyValuePairs.AddModelError("PassWord" , "Invalid PassWord");
 
                 return BadRequest(keyValuePairs);
             }
-             var result = await _signInManager.PasswordSignInAsync(user ,loginRequest.Password , loginRequest.RemeberMe , true);
+
+            var result = await _signInManager.PasswordSignInAsync(user ,loginRequest.Password , loginRequest.RemeberMe , true);
+
+            var claims = new List<Claim>();
+
+            claims.Add(new Claim (JwtRegisteredClaimNames.Sub , user.Id));
+            claims.Add(new Claim (JwtRegisteredClaimNames.Iat , DateTime.UtcNow.ToString()));
+            claims.Add(new Claim(ClaimTypes.Name, user.UserName!));
+            claims.Add(new Claim(ClaimTypes.Email, user.Email!));
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+
+            foreach (var item in userRoles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, item));
+            }
+
+            var token = new JwtSecurityToken(
+                issuer: "https://localhost:7233",
+                audience: "https://localhost:4200",
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(20),
+                signingCredentials: new SigningCredentials( new SymmetricSecurityKey(Encoding.UTF8.GetBytes("oDx3Son6eu6375cwRj1h9xRetYcI6i85jBCJzS+k+PK=")),
+                SecurityAlgorithms.HmacSha256)
+            );
+
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
             if (!result.Succeeded)
             {
@@ -116,7 +145,8 @@ namespace ECommerce_API_2.Areas.Identity
 
             return Created($"{Request.Scheme}/{Request.Host}/Customer/Home/Index" ,new SuccessRespones ()
             {
-                Msg = $"Welcome Back {user.UserName}"
+                Msg = $"Welcome Back {user.UserName}",
+                OptinalData = [tokenString]
             });
         }
 

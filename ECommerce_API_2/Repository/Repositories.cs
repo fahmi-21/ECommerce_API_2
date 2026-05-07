@@ -57,7 +57,7 @@ namespace ECommerce_API_2.Repository
             }
             return  await records.ToListAsync();
         }
-        public async Task<T?> GetOnyAsync (Expression<Func<T, bool>>? expression = null, Expression<Func<T, object>>[]? includes = null, bool tracked = true)
+        public async Task<T?> GetOneAsync (Expression<Func<T, bool>>? expression = null, Expression<Func<T, object>>[]? includes = null, bool tracked = true)
         {
             return (await GetAsync(
                 expression: expression,

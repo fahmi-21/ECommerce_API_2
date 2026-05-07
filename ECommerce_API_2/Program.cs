@@ -29,7 +29,7 @@ namespace ECommerce_API_2
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(option =>
             {
                 option.User.RequireUniqueEmail = true;
-                option.SignIn.RequireConfirmedEmail = true;
+                option.SignIn.RequireConfirmedEmail = false;
                 option.Password.RequiredLength = 8;
                 option.Lockout.MaxFailedAccessAttempts = 5;
                 option.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
@@ -56,6 +56,27 @@ namespace ECommerce_API_2
             builder.Services.AddScoped<IAccountServices, AccountServices>();
             builder.Services.AddScoped(typeof(IDBInitilizer), typeof(DBInitilizer));
             builder.Services.AddTransient<IEmailSender, EmailSender>();
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuers= new string[] { "https://localhost:7233" },
+                    ValidAudiences = new string[] { "https://localhost:4200" },
+                    ClockSkew = TimeSpan.Zero,
+                   
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("oDx3Son6eu6375cwRj1h9xRetYcI6i85jBCJzS+k+PK="))
+                };
+            });
 
             StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
