@@ -12,7 +12,7 @@ using static System.Net.WebRequestMethods;
 
 namespace ECommerce_API_2.Areas.Identity
 {
-     
+    [Route("[area]/[controller]")]
     [Area (SD.IDENTITY_AREA)]
     [ApiController]
     public class AccountsController : ControllerBase
@@ -22,16 +22,18 @@ namespace ECommerce_API_2.Areas.Identity
         private readonly IEmailSender _emailSender;
         private readonly IAccountServices _accountservices;
         private readonly IRepository<ApplicationUser> _applicationuserRepository;
-        
+        private readonly IConfiguration _configuration;
+
         public AccountsController (UserManager<ApplicationUser> userManager , SignInManager<ApplicationUser> signInManager ,
              IEmailSender emailSender , IRepository<ApplicationUser> applicationuserRepository 
-            , IAccountServices accountservices)
+            , IAccountServices accountservices, IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _emailSender = emailSender;
             _accountservices = accountservices;
             _applicationuserRepository = applicationuserRepository;
+            _configuration = configuration;
         }
         [HttpPost("Register")]
         public async Task<IActionResult> Register ( RegisterRequest registerrequest)
@@ -46,7 +48,7 @@ namespace ECommerce_API_2.Areas.Identity
                 Address = registerrequest.Address
             };
 
-            //set user's data using master
+            //set user's data using mapster
             //var user = registerrequest.Adapt<ApplicationUser>();
 
             var result = await _userManager.CreateAsync(user, registerrequest.Password);
@@ -100,30 +102,36 @@ namespace ECommerce_API_2.Areas.Identity
 
             var result = await _signInManager.PasswordSignInAsync(user ,loginRequest.Password , loginRequest.RemeberMe , true);
 
-            var claims = new List<Claim>();
+            List<Claim> userClaims =  new();
 
-            claims.Add(new Claim (JwtRegisteredClaimNames.Sub , user.Id));
-            claims.Add(new Claim (JwtRegisteredClaimNames.Iat , DateTime.UtcNow.ToString()));
-            claims.Add(new Claim(ClaimTypes.Name, user.UserName!));
-            claims.Add(new Claim(ClaimTypes.Email, user.Email!));
+            userClaims.Add(new Claim(JwtRegisteredClaimNames.Jti,Guid.NewGuid().ToString()));
+            userClaims.Add(new Claim(ClaimTypes.NameIdentifier, user.Id));
+            userClaims.Add(new Claim(ClaimTypes.Name, user.UserName!));
+            userClaims.Add(new Claim(ClaimTypes.Email, user.Email!));
 
             var userRoles = await _userManager.GetRolesAsync(user);
-
-            foreach (var item in userRoles)
+            if (userRoles != null)
             {
-                claims.Add(new Claim(ClaimTypes.Role, item));
+                foreach (var roleName in userRoles)
+                {
+                    userClaims.Add(new Claim(ClaimTypes.Role, roleName));
+                }
             }
 
-            var token = new JwtSecurityToken(
-                issuer: "https://localhost:7233",
-                audience: "https://localhost:4200",
-                claims: claims,
-                expires: DateTime.Now.AddMinutes(20),
-                signingCredentials: new SigningCredentials( new SymmetricSecurityKey(Encoding.UTF8.GetBytes("oDx3Son6eu6375cwRj1h9xRetYcI6i85jBCJzS+k+PK=")),
-                SecurityAlgorithms.HmacSha256)
-            );
+            var signInKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("0f24664b0f76166225004ff2cf5db2c68f5273a995cc7029c6d030f79b3779da"));
+            SigningCredentials signingCredentials = new(signInKey, SecurityAlgorithms.HmacSha256);
 
-            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+            JwtSecurityToken userToken = new JwtSecurityToken(
+                issuer: _configuration["JWT:Issuer"],
+                audience: _configuration["JWT:Audience"],
+                expires: DateTime.Now.AddMinutes(Convert.ToInt32(_configuration["JWT:DurationInMinutes"])),
+                claims: userClaims,
+                signingCredentials: signingCredentials
+                );
+
+
+          
+
 
             if (!result.Succeeded)
             {
@@ -143,11 +151,14 @@ namespace ECommerce_API_2.Areas.Identity
                 return BadRequest(keyValuePairs);
             }
 
-            return Created($"{Request.Scheme}/{Request.Host}/Customer/Home/Index" ,new SuccessRespones ()
+            return Created("", new SuccessRespones()
             {
-                Msg = $"Welcome Back {user.UserName}",
-                OptinalData = [tokenString]
+                Msg = "Logged in Successfully",
+                OptinalData = new List<string>{ new JwtSecurityTokenHandler().WriteToken(userToken)},
+                ExpireIn = userToken.ValidTo
             });
+
+            
         }
 
     }

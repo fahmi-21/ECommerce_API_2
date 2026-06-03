@@ -25,3 +25,5 @@ global using ECommerce_API_2.Services.IServices;
 global using ECommerce_API_2.Utilities.DBInitilization;
 global using Microsoft.IdentityModel.Tokens;
 global using System.Text;
+
+global using Mapster;

@@ -7,7 +7,7 @@ namespace ECommerce_API_2.Areas.Admin
     [Route("[area]/[controller]")]
     [ApiController]
     [Area(SD.ADMIN_AREA)]
-    [Authorize] //(Roles = $"{SD.SUPER_ADMIN_ROLE} , {SD.ADMIN_ROLE} , {SD.EMPLOYEE_ROLE} ")
+    [Authorize] 
     public class CategoriesController : ControllerBase
     {
         public IRepository<Category> Categories;
@@ -15,8 +15,7 @@ namespace ECommerce_API_2.Areas.Admin
         {
             Categories = categories;
         }
-        [HttpGet]
-        
+        [HttpGet]        
         public async Task<IActionResult> Get(string? name, int page = 1)
         {
 
@@ -41,21 +40,19 @@ namespace ECommerce_API_2.Areas.Admin
                 CurrentPage = curentpage
             });
         }
-        [HttpGet("{id}")]
-        
+        [HttpGet("{id}")]        
         public  async Task<IActionResult> GetOne([FromRoute] int id)
         {
             var category = await Categories.GetOneAsync(c => c.Id == id, tracked: false);
 
             if (category is null || category.Id == 0)
-                return BadRequest(new SuccessRespones()
+                return BadRequest(new ErrorResponse()
                 {
-                    Msg = "Invalid Category Data",
+                    ErorMsg = "Invalid Category Data",
                 });
             return Ok(category);
         }
-        [HttpPost]
-       
+        [HttpPost]      
         public async Task<IActionResult> Create(Category category)
         {
             await Categories.CreateAsync(category);
@@ -66,7 +63,6 @@ namespace ECommerce_API_2.Areas.Admin
             });
         }
         [HttpPut("{id}")]
-        
         public async Task<IActionResult> UpDate([FromRoute] int id , Category category)
         {
             var categoryinDb = await Categories.GetOneAsync(c => c.Id == id);
@@ -80,8 +76,7 @@ namespace ECommerce_API_2.Areas.Admin
                 Msg = "Category updated Successfully",
             });
         }
-        [HttpPatch("{id}")]
-        
+        [HttpPatch("{id}")]       
         public async Task<IActionResult> UpDateStatus([FromRoute] int id)
         {
             var categoryinDb = await Categories.GetOneAsync(c => c.Id == id);
@@ -96,8 +91,7 @@ namespace ECommerce_API_2.Areas.Admin
                 Msg = "Category updated Successfully",
             });
         }
-        [HttpDelete("{id}")]
-        
+        [HttpDelete("{id}")]       
         public async Task<IActionResult> Delete([FromRoute] int id)
         {
             var category = await Categories.GetOneAsync(c => c.Id == id);
