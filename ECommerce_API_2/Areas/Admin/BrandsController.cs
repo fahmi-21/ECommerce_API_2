@@ -101,6 +101,9 @@ namespace ECommerce_API_2.Areas.Admin
                 brandInDb.Logo = brandInDb.Logo;
             }
 
+            brandInDb.Status = brandUpdateRequest.status;
+            brandInDb.Name = brandUpdateRequest.Name;
+
             _brandRepo.Edit(brandInDb);
             await _brandRepo.CommitAsync();
 
