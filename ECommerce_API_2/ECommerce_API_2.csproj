@@ -24,7 +24,6 @@
 
   <ItemGroup>
     <Folder Include="Areas\ChatApp\" />
-    <Folder Include="Areas\Customer\" />
   </ItemGroup>
 
 </Project>

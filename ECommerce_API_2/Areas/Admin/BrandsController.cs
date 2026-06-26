@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerce_API_2.Areas.Admin
 {
-    [Route("api/[controller]")]
+    [Route("[area]/[controller]")]
     [ApiController]
+    [Area(SD.ADMIN_AREA)]
+    [Authorize]
     public class BrandsController : ControllerBase
     {
         private readonly IRepository<Brand> _brandRepo;

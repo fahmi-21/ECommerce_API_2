@@ -12,7 +12,7 @@ namespace ECommerce_API_2.Models
         public string? Description { get; set; }
         [Required(ErrorMessage = "Price is required")]
         [Range(1, 10000, ErrorMessage = "Price must be between 1 and 10000")]
-        public decimal Price { get; set; }
+        public double Price { get; set; }
         public double Discount { get; set; }
         public string Img { get; set; } = string.Empty;
         [Required]
