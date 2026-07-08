@@ -32,17 +32,18 @@ namespace ECommerce_API_2.Areas.Customer
         [HttpGet("AddToCart")]
         public async Task<IActionResult> AddToCart(int productId, int count)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
             var product = await _productRepo.GetOneAsync(p => p.Id == productId);
 
-            if (user is null || product is null) return NotFound();
+            if (userId is null || product is null) return NotFound();
 
-            var cartinDb = await _cartRepo.GetOneAsync(e => e.ApplicationUserId == user.Id && e.Product.Id == productId);
+            var cartinDb = await _cartRepo.GetOneAsync(e => e.ApplicationUserId == userId && e.Product.Id == productId);
             if (cartinDb is null)
             {
                 await _cartRepo.CreateAsync(new Cart
                 {
-                    ApplicationUserId = user.Id,
+                    ApplicationUserId = userId,
                     ProductId = productId,
                     Count = count,
                     ListPrice = (double)product.Price
@@ -60,12 +61,12 @@ namespace ECommerce_API_2.Areas.Customer
         [HttpGet]
         public async Task<IActionResult> Get(string? code = null)
         {
-            var user = await _userManager.GetUserAsync(User);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (user is null) return NotFound();
+            if (userId is null) return NotFound();
 
             var userCarts = await _cartRepo
-              .GetAsync(e => e.ApplicationUserId == user.Id, includes: [e => e.Product]);
+              .GetAsync(e => e.ApplicationUserId == userId, includes: [e => e.Product]);
 
             if (code is not null)
             {
@@ -110,11 +111,11 @@ namespace ECommerce_API_2.Areas.Customer
         [HttpPatch("{id}/Increment")]
         public async Task<IActionResult> Increment(int id)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user is null) return NotFound();
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null) return NotFound();
 
             var cart = await _cartRepo.GetOneAsync(
-                e => e.Id == id && e.ApplicationUserId == user.Id,
+                e => e.Id == id && e.ApplicationUserId == userId,
                 includes: new Expression<Func<Cart, object>>[]
                 {
                     e => e.Product
@@ -141,11 +142,11 @@ namespace ECommerce_API_2.Areas.Customer
         [HttpPatch("{id}/Decrement")]
         public async Task<IActionResult> Decrement(int id)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user is null) return NotFound();
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null) return NotFound();
 
             var cart = await _cartRepo.GetOneAsync(
-                e => e.Id == id && e.ApplicationUserId == user.Id,
+                e => e.Id == id && e.ApplicationUserId == userId,
                 includes: new Expression<Func<Cart, object>>[]
                 {
                     e => e.Product
@@ -165,11 +166,12 @@ namespace ECommerce_API_2.Areas.Customer
         [HttpPatch("{id}/Delete")]
         public async Task<IActionResult> Delete(int id)
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user is null) return NotFound();
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null) return NotFound();
 
             var cart = await _cartRepo.GetOneAsync(
-                e => e.Id == id && e.ApplicationUserId == user.Id,
+                e => e.Id == id && e.ApplicationUserId == userId,
                 includes: new Expression<Func<Cart, object>>[]
                 {
                     e => e.Product  
@@ -186,12 +188,12 @@ namespace ECommerce_API_2.Areas.Customer
         {
 
 
-            var user = await _userManager.GetUserAsync(User);
-            if (user is null) return NotFound();
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null) return NotFound();
 
             Order order = new Order
             {
-                ApplicationUserId = user.Id
+                ApplicationUserId = userId
             };
 
             await _orderRepo.CreateAsync(order);
@@ -206,7 +208,7 @@ namespace ECommerce_API_2.Areas.Customer
                 CancelUrl = $"{Request.Scheme}://{Request.Host}/Customer/checkout/cancel"
             };
 
-            var carts = await _cartRepo.GetAsync(e => e.ApplicationUserId == user.Id, includes: [ e => e.
+            var carts = await _cartRepo.GetAsync(e => e.ApplicationUserId == userId, includes: [ e => e.
             Product]);
 
             order.TotalPrice = carts.Sum(e => e.ListPrice);
