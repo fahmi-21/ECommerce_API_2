@@ -37,6 +37,8 @@ namespace ECommerce_API_2
             builder.Services.AddScoped<IRepository<ApplicationUserOTP> , Repositories<ApplicationUserOTP>>();
             builder.Services.AddScoped<IRepository<ApplicationUser>, Repositories<ApplicationUser>>();
             builder.Services.AddScoped<IRepository<Promotion> , Repositories<Promotion>>();
+            builder.Services.AddScoped<IRepository<Order> , Repositories<Order>>();
+            builder.Services.AddScoped<IRepository<OrderItems> , Repositories<OrderItems>>();
             
 
 
