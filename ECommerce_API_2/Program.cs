@@ -47,7 +47,7 @@ namespace ECommerce_API_2
             builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 
-
+            // JWT Authentication Configuration =====================================================
             var jwtKey = builder.Configuration["JWT:Key"]
                 ?? throw new InvalidOperationException("JWT:Key is not configured.");
             
