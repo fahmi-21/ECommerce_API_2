@@ -46,6 +46,17 @@ namespace ECommerce_API_2
             builder.Services.AddScoped(typeof(IDBInitilizer), typeof(DBInitilizer));
             builder.Services.AddTransient<IEmailSender, EmailSender>();
 
+
+
+            var jwtKey = builder.Configuration["JWT:Key"]
+                ?? throw new InvalidOperationException("JWT:Key is not configured.");
+            
+            var jwtIssuer = builder.Configuration["JWT:Issuer"]
+                ?? throw new InvalidOperationException("JWT:Issuer is missing.");
+
+            var jwtAudience = builder.Configuration["JWT:Audience"]
+                ?? throw new InvalidOperationException("JWT:Audience is missing.");
+
             builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -59,17 +70,17 @@ namespace ECommerce_API_2
                      
 
                      ValidateIssuer = true,
-                     ValidIssuer = builder.Configuration["JWT:Issuer"],
+                     ValidIssuer = builder.Configuration[jwtIssuer],
 
                      ValidateAudience = true,
-                     ValidAudience = builder.Configuration["JWT:Audience"],
+                     ValidAudience = builder.Configuration[jwtAudience],
 
                      ValidateLifetime = true,
                      ClockSkew = TimeSpan.Zero,
 
                      ValidateIssuerSigningKey = true,
                      IssuerSigningKey = new SymmetricSecurityKey(
-                         Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"])
+                         Encoding.UTF8.GetBytes(jwtKey)
                      )
 
                      
@@ -104,7 +115,7 @@ namespace ECommerce_API_2
             app.UseAuthorization();
 
             var scope = app.Services.CreateScope();
-            var service = scope.ServiceProvider.GetService<IDBInitilizer>();
+            var service = scope.ServiceProvider.GetRequiredService<IDBInitilizer>();
             service.Initialize();
 
             app.MapControllers();
