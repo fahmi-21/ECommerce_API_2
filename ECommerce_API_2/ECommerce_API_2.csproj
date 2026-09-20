@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Areas\ChatApp\**" />
+    <Content Remove="Areas\ChatApp\**" />
+    <EmbeddedResource Remove="Areas\ChatApp\**" />
+    <None Remove="Areas\ChatApp\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Mapster" Version="10.0.7" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.5" />
@@ -22,10 +29,6 @@
     <PackageReference Include="OpenAI" Version="2.13.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.13.18" />
     <PackageReference Include="Stripe.net" Version="51.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Areas\ChatApp\" />
   </ItemGroup>
 
 </Project>

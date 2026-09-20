@@ -21,18 +21,18 @@ namespace ECommerce_API_2.Areas.Identity
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IEmailSender _emailSender;
         private readonly IAccountServices _accountservices;
-        private readonly IRepository<ApplicationUser> _applicationuserRepository;
+        private readonly IRepository<ApplicationUserOTP> _applicationuserOtpRepository;
         private readonly IConfiguration _configuration;
 
         public AccountsController (UserManager<ApplicationUser> userManager , SignInManager<ApplicationUser> signInManager ,
-             IEmailSender emailSender , IRepository<ApplicationUser> applicationuserRepository 
+             IEmailSender emailSender , IRepository<ApplicationUserOTP> applicationuserotpRepository 
             , IAccountServices accountservices, IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _emailSender = emailSender;
             _accountservices = accountservices;
-            _applicationuserRepository = applicationuserRepository;
+            _applicationuserOtpRepository = applicationuserotpRepository;
             _configuration = configuration;
         }
         [HttpPost("Register")]
@@ -160,6 +160,171 @@ namespace ECommerce_API_2.Areas.Identity
 
             
         }
+        [HttpGet("ConfirmEmail")]
+        public async Task<IActionResult> ConfirmEmail( string Id , string Email)
+        {
+            var user = await _userManager.FindByIdAsync(Id);
 
+            if (user is null)
+                return NotFound(new ErrorResponse()
+                {
+                    ErorMsg = "User Not Found"
+                });
+
+            var result = await _userManager.ConfirmEmailAsync(user, Email);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(new
+                {
+                    message = "Invalid confirmation link. Please try again.",
+                    errors = result.Errors.Select(e => e.Description)
+                });
+            }
+
+            return Ok(new SuccessRespones()
+            {
+                Msg = "Email Confirmed Successfully"
+            });
+        }
+        [HttpPost("ForgotPassword")]
+        public async Task<IActionResult> ForgotPassword( ForgotPasswordRequest forgotPasswordDto)
+        {
+            var user =
+                await _userManager.FindByEmailAsync(forgotPasswordDto.EmailOrUserName)
+                ?? await _userManager.FindByNameAsync(forgotPasswordDto.EmailOrUserName);
+
+            if (user is null)
+            {
+                return NotFound(new ErrorResponse
+                {
+                    ErorMsg = "User Not Found"
+                });
+            }
+
+            if (!user.EmailConfirmed)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    ErorMsg = "Please Confirm Your Email First"
+                });
+            }
+
+            var userOtpCount =
+                (await _applicationuserOtpRepository.GetAsync(
+                    e => e.ApplicationUserId == user.Id &&
+                         e.CreateAt >= DateTime.UtcNow.AddHours(-24)
+                )).Count();
+
+            if (userOtpCount >= 3)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    ErorMsg =
+                        "You Have Reached The Maximum Number Of OTP Requests. Please Try Again Later."
+                });
+            }
+
+            var otp = Random.Shared.Next(100000, 999999).ToString();
+
+            string msg =
+                $"<h1>Your OTP Is: {otp}. Don't Share It.</h1>";
+
+            await _accountservices.SendEmailAsync(
+                EmailType.CorgetPassword,
+                msg,
+                user);
+
+            var userOtp = new ApplicationUserOTP
+            {
+                ApplicationUserId = user.Id,
+                OTP = otp,
+                CreateAt = DateTime.UtcNow
+            };
+
+            await _applicationuserOtpRepository.CreateAsync(userOtp);
+            await _applicationuserOtpRepository.CommitAsync();
+
+            return Ok(new SuccessRespones
+            {
+                Msg = "OTP Has Been Sent Successfully"
+            });
+        }
+        [HttpPost("ValidateOTP")]
+        public async Task<IActionResult> ValidateOTP(ValidateOTPRequest validateOTPDTO)
+        {
+            var user = await _userManager.FindByEmailAsync(validateOTPDTO.Email);
+
+            if (user is null) return NotFound();
+
+            var otp = (await _applicationuserOtpRepository.GetAsync()).Where(e => e.ApplicationUserId == user.Id && e.IsValid).OrderBy(e => e.Id).LastOrDefault();
+
+            if (otp is null)
+                return BadRequest(new ErrorResponse { ErorMsg = "Invalid OTP"});
+
+            var resetToken =await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            return Ok(new
+            {
+                Msg = "OTP Verified Successfully",
+                ResetToken = resetToken
+            });
+        }
+        [HttpPost("resend-email-confirmation")]
+        public async Task<IActionResult> ResendEmailConfirmation(ResendEmailConfirmationRequest resendEmailConfirmationDTO)
+        {
+            var user = await _userManager.FindByEmailAsync(resendEmailConfirmationDTO.EmailOrUserName) ??
+                await _userManager.FindByNameAsync(resendEmailConfirmationDTO.EmailOrUserName);
+
+            if (user is null)
+                return NotFound(new ErrorResponse{ErorMsg = "User Not Found"});
+
+            if (user.EmailConfirmed)
+                return BadRequest(new ErrorResponse {ErorMsg = "Email is already confirmed."});
+
+            if (user is not null && !user.EmailConfirmed)
+            {
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+
+                var confirmationLink = Url.Action("ConfirmEmail", "Account",
+                    new { area = "Identity", token, Id = user.Id },
+                    Request.Scheme);
+
+                await _accountservices.SendEmailAsync(EmailType.Redsendconfirmation, $"<h1>Click <a href='{confirmationLink}'>here</a> to cofirm youyr account</h1>", user);
+            }
+
+
+            return Ok(new SuccessRespones
+            {
+                Msg = "Email Has Been Resended Successfully ,Please Confirm It "
+            });
+        }
+        [HttpGet ("ResetPassword")]
+        public async Task<IActionResult> ResetPassword( ResetPasswordRequest resetPasswordRequest)
+        {
+            var user = await _userManager.FindByEmailAsync(resetPasswordRequest.Email);
+
+            if (user is null)
+                return NotFound(new ErrorResponse { ErorMsg = "User Not Found" });
+
+
+
+            var result = await _userManager.ResetPasswordAsync(user, resetPasswordRequest.ResetToken, resetPasswordRequest.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    ErorMsg = string.Join(
+                        ", ",
+                        result.Errors.Select(x => x.Description))
+                });
+            }
+
+            return Ok(new SuccessRespones
+            {
+                Msg = "Password Reset Successfully"
+            });
+        }
     }
 }
