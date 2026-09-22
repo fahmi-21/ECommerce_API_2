@@ -18,10 +18,7 @@ namespace ECommerce_API_2.Utilities.DBInitilization
         }
         public async Task Initialize()
         {
-            //if (_context.Database.GetPendingMigrations().Any())
-            //{
-            //    _context.Database.Migrate();
-            //}
+            
 
             if (!await _roleManager.RoleExistsAsync(SD.SUPER_ADMIN_ROLE))
             {
